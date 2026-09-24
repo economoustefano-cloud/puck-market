@@ -71,7 +71,7 @@ svg.spark{width:100%;height:38px;display:block}
 .preview{font-size:13px;color:var(--mute);display:grid;grid-template-columns:1fr auto;gap:2px 10px}
 .preview b{color:var(--text);font-family:var(--mono);font-weight:500;text-align:right}
 .hold{font-size:13px;background:var(--bg);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.hold button{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px}
+.hold{flex-wrap:wrap}.hold button{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px}
 .err{color:var(--down);font-size:13px;min-height:0}
 .ok{color:var(--up);font-size:13px}
 table{width:100%;border-collapse:collapse;font-size:14px}
@@ -256,7 +256,10 @@ function myRows(mk, my, done) {
       out.push(`<div class="hold"><div>You had <b>${money(st)}</b> on ${esc(who)}</div><b class="${cls(back - st)}">${money(back - st, 1)}</b></div>`);
     } else {
       const pay = wouldPay(mk, side, st);
-      out.push(`<div class="hold"><div>You have <b>${money(st)}</b> on ${esc(who)}<br><span style="color:var(--mute)">if they win, right now that pays <span class="pos">${money(pay)} (${money(pay - st, 1)})</span></span></div></div>`);
+      const take = mk.starts_at && Date.now() < +new Date(mk.starts_at);
+      out.push(`<div class="hold"><div>You have <b>${money(st)}</b> on ${esc(who)}<br><span style="color:var(--mute)">if they win, right now that pays <span class="pos">${money(pay)} (${money(pay - st, 1)})</span></span>
+        ${take ? `<br><span style="color:var(--mute)">You can take it back until ${fmtT(mk.starts_at)} ET</span>` : ''}</div>
+        ${take ? bs.map(b => `<button data-take="${b.id}">Take back ${money(+b.amount)}</button>`).join('') : ''}</div>`);
     }
   }
   return out.join('');
@@ -277,7 +280,7 @@ function ticket(mk, sel) {
     ${pv}
     <div class="err">${bad ? `That would put you past the -$${FLOOR} floor. You can bet ${money(left)} more.` : ''}</div>
     <button class="go ${sel.side === 'b' ? 'B' : ''}" data-buy="${mk.id}" ${amt >= 1 && !bad && !S.busy ? '' : 'disabled'}>Bet ${amt > 0 ? money(amt) + ' on ' : 'on '}${esc(name(sel.side === 'a' ? mk.team_a : mk.team_b))}</button>
-    <div class="sub" style="margin:0">Bets are final once placed. The payout moves as more money comes in until the lock.</div>
+    <div class="sub" style="margin:0">${mk.starts_at && Date.now() < +new Date(mk.starts_at) ? `You can take this bet back until the week starts (${fmtT(mk.starts_at)} ET). After that it is locked in.` : `The week has started, so this bet is locked in once placed.`} The payout moves as more money comes in.</div>
   </div>`;
 }
 
@@ -308,7 +311,7 @@ function viewHow() {
   <h3>The idea</h3><p>Every head-to-head matchup in Fantasy Hockey Year 6 has two pots, one for each team. Put money in the pot of the team you think wins the week.</p>
   <h3>How you win</h3><ul><li>When the week ends, the winning pot splits the losing pot, in proportion to what each person put in.</li><li><b>Max win is 5x your bet.</b> If the losing pot is bigger than that, the extra goes back to the people who bet it. So $1 sniped against $100 wins $5, not $100, and the $100 guy only loses $5.</li><li>Example: $100 on Stefano, $300 on George. George wins: the George bettors get back their $300 plus the $100, split by stake. Stefano wins: the Stefano bettors get back their $100 plus the $300, so every $1 they bet pays $4.</li><li>You only win money a friend bet on the other side. There's no house. If nobody bets the other side, or it's a tie, everyone gets their money back.</li></ul>
   <h3>Two kinds of odds</h3><ul><li><b>Pot odds</b> (the big % on each team) = that team's share of the money. They decide payouts and move with every bet. The less popular side pays more. Until someone bets there's no number, because there's no money yet.</li><li><b>Live odds</b> = the Off-Night Projections model: the real Yahoo score so far plus a projection for the games still to play, with current rosters. They update every hour, so adds, drops, injuries, goalie starts and a big Tuesday all move them.</li><li>When the live odds and the pot odds disagree, that's your edge.</li></ul>
-  <h3>Rules</h3><ul><li>Everyone starts the season at <b>$0</b>. Standings show your season total and every week.</li><li>Bet on any matchup. In your own matchup you can only back yourself, never bet against yourself.</li><li>Nobody can be more than <b>$${FLOOR}</b> down. That counts the bets you have in play.</li><li>Bets are final once placed.</li><li>Matchups open about a week ahead.</li><li>Every day, betting pauses at the first NHL puck drop and reopens at 8 AM ET the next morning, once the scores are in. No betting on games in progress.</li><li>Betting locks for the week at the first puck drop on the last day of the matchup week.</li><li>Matchups settle the morning after the week ends, from the Yahoo scoreboard.</li><li>The site only keeps score. Anything real gets settled between you guys at the end.</li></ul>
+  <h3>Rules</h3><ul><li>Everyone starts the season at <b>$0</b>. Standings show your season total and every week.</li><li>Bet on any matchup. In your own matchup you can only back yourself, never bet against yourself.</li><li>Nobody can be more than <b>$${FLOOR}</b> down. That counts the bets you have in play.</li><li><b>Taking a bet back:</b> until the first puck drop of the matchup week you can take any bet back for a full refund. Once the week starts, every bet is locked in (bets placed mid-week are locked right away).</li><li>Matchups open about a week ahead.</li><li>Every day, betting pauses at the first NHL puck drop and reopens at 8 AM ET the next morning, once the scores are in. No betting on games in progress.</li><li>Betting locks for the week at the first puck drop on the last day of the matchup week.</li><li>Matchups settle the morning after the week ends, from the Yahoo scoreboard.</li><li>The site only keeps score. Anything real gets settled between you guys at the end.</li></ul>
   <h3>Your link</h3><p>Your personal link logs you in. Don't share it, or someone else can bet as you.</p></div>`;
 }
 
@@ -319,6 +322,14 @@ document.addEventListener('click', async e => {
   if (t.dataset.week) { S.week = +t.dataset.week; render(); return; }
   if (t.dataset.pick) { const [id, side] = t.dataset.pick.split('|'); const cur = S.sel[id]; S.sel[id] = cur && cur.side === side ? null : { side, amt: cur?.amt || '' }; render(); focusAmt(id); return; }
   if (t.dataset.add) { const [id, v] = t.dataset.add.split('|'); S.sel[id].amt = String((+S.sel[id].amt || 0) + +v); render(); return; }
+  if (t.dataset.take) {
+    if (t.dataset.confirm !== '1') { t.dataset.confirm = '1'; t.textContent = 'Tap again to take it back'; return; }
+    if (S.busy) return; S.busy = true;
+    const { data, error } = await SB.rpc('take_back', { tok: TOKEN, bet: +t.dataset.take });
+    S.busy = false;
+    toast(error ? error.message : `${money(+data.refunded)} is back in your pocket`);
+    await load(); render(); return;
+  }
   if (t.dataset.buy) {
     const id = t.dataset.buy, sel = S.sel[id];
     if (t.dataset.confirm !== '1') { t.dataset.confirm = '1'; t.textContent = `Tap again to confirm ${money(+sel.amt)}`; return; }
