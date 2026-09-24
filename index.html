@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Puck Market</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0f14;--panel:#121821;--panel2:#18202b;--line:#232d3a;--text:#e8edf3;--mute:#8594a7;
+  --a:#3b82f6;--a-soft:rgba(59,130,246,.14);--b:#f97316;--b-soft:rgba(249,115,22,.14);
+  --up:#22c55e;--down:#ef4444;--gold:#eab308;
+  --r:14px;--mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+body{padding:env(safe-area-inset-top,0) 16px calc(env(safe-area-inset-bottom,0) + 40px)}
+.wrap{max-width:980px;margin:0 auto}
+a{color:inherit}
+button{font:inherit;cursor:pointer;border:0;color:inherit}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 0 14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:-.02em}
+.brand .puck{width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3a4454,#0a0d12 70%);box-shadow:0 0 0 2px #2b3544}
+.brand small{display:block;font-weight:500;font-size:12px;color:var(--mute);letter-spacing:0}
+.me{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;white-space:nowrap}
+.chip b{font-family:var(--mono);font-weight:700}
+.pos{color:var(--up)}.neg{color:var(--down)}
+nav{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;overflow-x:auto}
+nav button{background:none;padding:10px 14px;color:var(--mute);font-weight:600;border-bottom:2px solid transparent;white-space:nowrap}
+nav button.on{color:var(--text);border-color:var(--text)}
+.weeks{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px}
+.weeks button{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--mute);white-space:nowrap}
+.weeks button.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+.sub{color:var(--mute);font-size:13px;margin:-6px 0 14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px}
+.card.mine{border-color:#3a4a60}
+.card-top{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--mute)}
+.tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:6px;background:var(--panel2)}
+.tag.live{color:var(--up)}.tag.lock{color:var(--gold)}.tag.done{color:var(--mute)}
+.side{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:var(--panel2);border:1px solid transparent;text-align:left;width:100%}
+.side .nm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.side .mg{font-size:12px;color:var(--mute)}
+.side .px{font-family:var(--mono);font-weight:700;font-size:20px}
+.side.A .px{color:var(--a)}.side.B .px{color:var(--b)}
+.side:hover:not(:disabled){border-color:var(--line)}
+.side.sel.A{border-color:var(--a);background:var(--a-soft)}
+.side.sel.B{border-color:var(--b);background:var(--b-soft)}
+.side:disabled{cursor:default}
+.side.won{outline:2px solid var(--up)}
+.bar{height:6px;border-radius:3px;background:var(--b);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--a)}
+.meta{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--mute);flex-wrap:wrap}
+.meta b{color:var(--text);font-family:var(--mono);font-weight:500}
+svg.spark{width:100%;height:38px;display:block}
+.ticket{border-top:1px dashed var(--line);padding-top:12px;display:flex;flex-direction:column;gap:10px}
+.row{display:flex;gap:8px;align-items:center}
+.amt{flex:1;display:flex;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:0 10px}
+.amt span{color:var(--mute)}
+.amt input{flex:1;min-width:0;background:none;border:0;color:var(--text);font:600 16px var(--mono);padding:10px 6px;outline:none}
+.quick button{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px}
+.go{width:100%;padding:12px;border-radius:10px;font-weight:700;background:var(--a);color:#fff}
+.go.B{background:var(--b)}
+.go:disabled{opacity:.45;cursor:default}
+.preview{font-size:13px;color:var(--mute);display:grid;grid-template-columns:1fr auto;gap:2px 10px}
+.preview b{color:var(--text);font-family:var(--mono);font-weight:500;text-align:right}
+.hold{font-size:13px;background:var(--bg);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.hold button{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px}
+.err{color:var(--down);font-size:13px;min-height:0}
+.ok{color:var(--up);font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:10px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:12px;color:var(--mute);font-weight:600}
+th:first-child,td:first-child{text-align:left}
+td.n{font-family:var(--mono)}
+tr.you td{background:rgba(255,255,255,.03)}
+.scroll{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
+.feed{display:flex;flex-direction:column;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:6px}
+.feed div{padding:10px;border-radius:8px;font-size:14px;display:flex;justify-content:space-between;gap:10px}
+.feed div:nth-child(odd){background:var(--panel2)}
+.feed time{color:var(--mute);font-size:12px;white-space:nowrap}
+.how{max-width:680px;color:#c9d3df}
+.how h3{margin:22px 0 6px;color:var(--text)}
+.how p,.how li{margin:4px 0}
+.gate{max-width:440px;margin:12vh auto;text-align:center;color:var(--mute)}
+.gate h1{color:var(--text)}
+.empty{color:var(--mute);padding:30px 0;text-align:center}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0));transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:14px;opacity:0;transition:.2s;pointer-events:none;max-width:90vw}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="empty">Loading…</div></div>
+<div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const SB = supabase.createClient('https://svesriuvprzeuuyocino.supabase.co', 'sb_publishable_PdBtK_rVll5rJvD2SGOFVQ_HR_UUEyq');
+const FLOOR = 500;   // nobody can be more than $500 down on the season
+
+// ---- login link: #t=<token>, remembered on this device ----
+let TOKEN = null;
+try {
+  const m = location.hash.match(/t=([\w-]+)/);
+  if (m) { TOKEN = m[1]; localStorage.setItem('pm_tok', TOKEN); history.replaceState(null, '', location.pathname); }
+  else TOKEN = localStorage.getItem('pm_tok');
+} catch (e) {}
+
+const S = { me: null, managers: {}, markets: [], bets: [], gates: [], tab: 'markets', week: null, sel: {}, busy: false };
+
+// ---- helpers ----
+const $ = s => document.querySelector(s);
+const money = (x, sign) => { const v = Math.round(x * 100) / 100; const s = Math.abs(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); return (v < 0 ? '-$' : (sign && v > 0 ? '+$' : '$')) + s; };
+const pct = p => Math.round(p * 100) + '%';
+const cls = v => v > 0.004 ? 'pos' : v < -0.004 ? 'neg' : '';
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const isOpen = mk => mk.status === 'open' && new Date(mk.closes_at) > new Date();
+const name = id => S.managers[id].name;
+const fmtT = t => new Date(t).toLocaleString('en-US', { timeZone: 'America/Toronto', weekday: 'short', hour: 'numeric', minute: '2-digit' });
+function paused() { const n = Date.now(); return S.gates.find(g => n >= +new Date(g.lock_at) && n < +new Date(g.reopen_at)); }
+function nextLock() { const n = Date.now(); return S.gates.map(g => +new Date(g.lock_at)).filter(t => t > n).sort((a, b) => a - b)[0]; }
+const canBet = mk => isOpen(mk) && !paused();
+function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('on'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 2800); }
+function ago(t) { const s = (Date.now() - new Date(t)) / 1000; if (s < 60) return 'now'; if (s < 3600) return Math.floor(s / 60) + 'm'; if (s < 86400) return Math.floor(s / 3600) + 'h'; return Math.floor(s / 86400) + 'd'; }
+function until(t) { const s = (new Date(t) - Date.now()) / 1000; if (s <= 0) return 'locked'; const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60); return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : `${m}m`; }
+
+// pool odds: each side's share of the money. No money yet -> the model's number.
+function odds(mk) {
+  const a = +mk.pot_a, b = +mk.pot_b;
+  return a + b > 0 ? { pa: a / (a + b), crowd: true } : { pa: +mk.model_p, crowd: false };
+}
+// what a $amt bet on side returns (stake included) if they win and the pots stay as they are after it
+function wouldPay(mk, side, amt, extra = 0) {
+  const mine = (side === 'a' ? +mk.pot_a : +mk.pot_b) + extra, other = side === 'a' ? +mk.pot_b : +mk.pot_a;
+  return mine > 0 ? amt + amt / mine * other : amt;
+}
+const settled = b => b.payout != null;
+function result(mid, week) {   // settled winnings - stakes; week null = season
+  let t = 0;
+  for (const b of S.bets) {
+    if (b.manager_id !== mid || !settled(b)) continue;
+    if (week != null && S.mk[b.market_id]?.week !== week) continue;
+    t += +b.payout - +b.amount;
+  }
+  return t;
+}
+const inPlay = (mid, week) => S.bets.filter(b => b.manager_id === mid && !settled(b) && (week == null || S.mk[b.market_id]?.week === week)).reduce((s, b) => s + +b.amount, 0);
+
+// ---- data ----
+async function load() {
+  const [m, mk, g, b] = await Promise.all([
+    SB.from('managers').select('*'), SB.from('markets').select('*'), SB.from('gates').select('*'),
+    SB.from('bets').select('*').order('at', { ascending: false }).limit(5000)]);
+  if (m.error) throw m.error;
+  S.managers = Object.fromEntries(m.data.map(x => [x.id, x]));
+  S.markets = mk.data.sort((a, b) => a.week - b.week || a.id.localeCompare(b.id, undefined, { numeric: true }));
+  S.mk = Object.fromEntries(S.markets.map(x => [x.id, x]));
+  S.bets = b.data; S.gates = g.data || [];
+  if (S.week == null) {
+    const open = S.markets.filter(isOpen).map(x => x.week);
+    S.week = open.length ? Math.min(...open) : (S.markets.length ? Math.max(...S.markets.map(x => x.week)) : 1);
+  }
+}
+let reT;
+function soon() { clearTimeout(reT); reT = setTimeout(async () => { await load(); if (!document.activeElement?.dataset?.amt) render(); }, 300); }
+
+// ---- render ----
+function render() {
+  const me = S.me, sea = result(me.id, null), wk = result(me.id, S.week), risk = inPlay(me.id, null);
+  $('#app').innerHTML = `
+  <header>
+    <div class="brand"><div class="puck"></div><div>Puck Market<small>Fantasy Hockey Year 6</small></div></div>
+    <div class="me">
+      <span class="chip">${esc(me.name)}</span>
+      <span class="chip">Season <b class="${cls(sea)}">${money(sea, 1)}</b></span>
+      <span class="chip">Wk ${S.week} <b class="${cls(wk)}">${money(wk, 1)}</b></span>
+      ${risk ? `<span class="chip">In play <b>${money(risk)}</b></span>` : ''}
+    </div>
+  </header>
+  <nav>${[['markets', 'Matchups'], ['board', 'Standings'], ['feed', 'Activity'], ['how', 'How it works']]
+    .map(([k, l]) => `<button data-tab="${k}" class="${S.tab === k ? 'on' : ''}">${l}</button>`).join('')}</nav>
+  <main>${S.tab === 'markets' ? viewMarkets() : S.tab === 'board' ? viewBoard() : S.tab === 'feed' ? viewFeed() : viewHow()}</main>`;
+}
+
+function weekBar() {
+  const ws = [...new Set(S.markets.map(m => m.week))].sort((a, b) => a - b);
+  return `<div class="weeks">${ws.map(w => `<button data-week="${w}" class="${w === S.week ? 'on' : ''}">Week ${w}</button>`).join('')}</div>`;
+}
+
+function spark(mk) {   // the pool's odds after every bet
+  const bs = S.bets.filter(b => b.market_id === mk.id).slice().reverse();
+  if (bs.length < 2) return '';
+  let a = 0, b = 0; const pts = [];
+  for (const x of bs) { if (x.side === 'a') a += +x.amount; else b += +x.amount; pts.push(a / (a + b)); }
+  const W = 300, H = 38, n = pts.length - 1;
+  const d = pts.map((p, i) => `${i ? 'L' : 'M'}${(i / n * W).toFixed(1)},${(H - 3 - p * (H - 6)).toFixed(1)}`).join('');
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><line x1="0" x2="${W}" y1="${H / 2}" y2="${H / 2}" stroke="#2a3442" stroke-dasharray="3 4"/><path d="${d}" fill="none" stroke="var(--a)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
+}
+
+function viewMarkets() {
+  const list = S.markets.filter(m => m.week === S.week);
+  if (!list.length) return weekBar() + `<div class="empty">No matchups open yet. Next week's matchups open about 7 days before it starts.</div>`;
+  const open = isOpen(list[0]), pz = paused(), nl = nextLock();
+  const status = !open ? 'Betting is locked for this week.'
+    : pz ? `<b>Games are on, betting is paused.</b> It reopens ${fmtT(pz.reopen_at)} ET with the overnight scores in.`
+    : nl && nl < +new Date(list[0].closes_at) ? `<b>Betting is open</b> until the first puck drop, ${fmtT(nl)} ET.`
+    : `<b>Last call:</b> betting locks for the week at ${fmtT(list[0].closes_at)} ET.`;
+  return weekBar() + `<p class="sub">${status} Winners split the losers' pot.</p>
+    <div class="grid">${list.map(card).join('')}</div>`;
+}
+
+function card(mk) {
+  const A = S.managers[mk.team_a], B = S.managers[mk.team_b], me = S.me.id, o = odds(mk);
+  const open = isOpen(mk), done = mk.status === 'resolved', mine = me === mk.team_a || me === mk.team_b;
+  const sel = S.sel[mk.id], pot = +mk.pot_a + +mk.pot_b;
+  const tag = done ? '<span class="tag done">Final</span>' : open && paused() ? '<span class="tag lock">Paused</span>' : open ? (mk.score_a != null && (+mk.score_a || +mk.score_b) ? '<span class="tag live">Live</span>' : '<span class="tag">Open</span>') : '<span class="tag lock">Locked</span>';
+  const live = canBet(mk), canA = live && !(mine && me === mk.team_b), canB = live && !(mine && me === mk.team_a);
+  const score = mk.score_a != null ? `<span>Score <b>${(+mk.score_a).toFixed(1)} - ${(+mk.score_b).toFixed(1)}</b></span>` : '';
+  const my = S.bets.filter(b => b.manager_id === me && b.market_id === mk.id);
+  return `<div class="card ${mine ? 'mine' : ''}">
+    <div class="card-top"><span>${mine ? 'Your matchup' : 'Week ' + mk.week}</span>${tag}</div>
+    ${sideBtn(mk, 'a', A, o.pa, canA, sel && sel.side === 'a', done && mk.winner === 'a')}
+    ${sideBtn(mk, 'b', B, 1 - o.pa, canB, sel && sel.side === 'b', done && mk.winner === 'b')}
+    <div class="bar"><i style="width:${(o.pa * 100).toFixed(1)}%"></i></div>
+    ${spark(mk)}
+    <div class="meta"><span>${o.crowd ? `Pot <b>${money(pot)}</b>` : 'No bets yet'}</span>
+      <span title="Off-Night model: score so far + projection for the games left, current rosters">Live odds <b>${pct(+mk.model_p)} / ${pct(1 - mk.model_p)}</b></span></div>
+    <div class="meta">${score || '<span>Not started</span>'}${mk.model_a != null ? `<span>Proj final <b>${(+mk.model_a).toFixed(0)} - ${(+mk.model_b).toFixed(0)}</b></span>` : ''}</div>
+    ${myRows(mk, my, done)}
+    ${sel && live ? ticket(mk, sel) : ''}
+  </div>`;
+}
+function sideBtn(mk, side, M, p, can, on, won) {
+  const pot = side === 'a' ? +mk.pot_a : +mk.pot_b;
+  return `<button class="side ${side === 'a' ? 'A' : 'B'} ${on ? 'sel' : ''} ${won ? 'won' : ''}" data-pick="${mk.id}|${side}" ${can ? '' : 'disabled'}>
+    <div><div class="nm">${esc(M.team)}</div><div class="mg">${esc(M.name)}${won ? ' · won' : ''}${pot ? ' · ' + money(pot) + ' on them' : ''}</div></div>
+    <div class="px">${pct(p)}</div></button>`;
+}
+function myRows(mk, my, done) {
+  const out = [];
+  for (const side of ['a', 'b']) {
+    const bs = my.filter(b => b.side === side); if (!bs.length) continue;
+    const st = bs.reduce((s, b) => s + +b.amount, 0), who = name(side === 'a' ? mk.team_a : mk.team_b);
+    if (done) {
+      const back = bs.reduce((s, b) => s + +(b.payout ?? 0), 0);
+      out.push(`<div class="hold"><div>You had <b>${money(st)}</b> on ${esc(who)}</div><b class="${cls(back - st)}">${money(back - st, 1)}</b></div>`);
+    } else {
+      const pay = wouldPay(mk, side, st);
+      out.push(`<div class="hold"><div>You have <b>${money(st)}</b> on ${esc(who)}<br><span style="color:var(--mute)">if they win, right now that pays <span class="pos">${money(pay)} (${money(pay - st, 1)})</span></span></div></div>`);
+    }
+  }
+  return out.join('');
+}
+function ticket(mk, sel) {
+  const amt = +sel.amt || 0, left = +S.managers[S.me.id].cash;
+  let pv = '';
+  if (amt > 0) {
+    const pay = wouldPay(mk, sel.side, amt, amt), other = sel.side === 'a' ? +mk.pot_b : +mk.pot_a;
+    pv = `<div class="preview"><span>If they win, at today's pots</span><b class="pos">${money(pay)} (${money(pay - amt, 1)})</b>
+      <span>If they lose</span><b class="neg">${money(-amt)}</b></div>
+      ${other ? '' : `<div class="sub" style="margin:0">Nobody is on the other side yet. If it stays that way you get your money back.</div>`}`;
+  }
+  const bad = amt > left + 1e-9;
+  return `<div class="ticket">
+    <div class="row"><div class="amt"><span>$</span><input inputmode="decimal" placeholder="0" value="${sel.amt || ''}" data-amt="${mk.id}"></div>
+      <div class="row quick">${[10, 25, 50].map(v => `<button data-add="${mk.id}|${v}">+${v}</button>`).join('')}</div></div>
+    ${pv}
+    <div class="err">${bad ? `That would put you past the -$${FLOOR} floor. You can bet ${money(left)} more.` : ''}</div>
+    <button class="go ${sel.side === 'b' ? 'B' : ''}" data-buy="${mk.id}" ${amt >= 1 && !bad && !S.busy ? '' : 'disabled'}>Bet ${amt > 0 ? money(amt) + ' on ' : 'on '}${esc(name(sel.side === 'a' ? mk.team_a : mk.team_b))}</button>
+    <div class="sub" style="margin:0">Bets are final once placed. The payout moves as more money comes in until the lock.</div>
+  </div>`;
+}
+
+function viewBoard() {
+  const ws = [...new Set(S.markets.map(m => m.week))].sort((a, b) => a - b);
+  const rows = Object.values(S.managers).map(m => ({ m, sea: result(m.id, null), w: ws.map(w => result(m.id, w)), risk: inPlay(m.id, null) }))
+    .sort((a, b) => b.sea - a.sea || b.risk - a.risk);
+  const total = rows.reduce((s, r) => s + r.sea, 0);
+  return `<p class="sub">Everyone started at $0. Only settled matchups count. Every dollar someone is up, someone else is down (league total: ${money(Math.abs(total) < .005 ? 0 : total)}).</p>
+  <div class="scroll"><table><thead><tr><th>#</th><th style="text-align:left">Manager</th><th>Season</th>${ws.map(w => `<th>Wk ${w}</th>`).join('')}<th>In play</th></tr></thead><tbody>
+  ${rows.map((r, i) => `<tr class="${r.m.id === S.me.id ? 'you' : ''}"><td>${i + 1}</td><td style="text-align:left"><b>${esc(r.m.name)}</b><br><span style="color:var(--mute);font-size:12px">${esc(r.m.team)}</span></td>
+    <td class="n ${cls(r.sea)}"><b>${money(r.sea, 1)}</b></td>${r.w.map(v => `<td class="n ${cls(v)}">${Math.abs(v) < .005 ? '-' : money(v, 1)}</td>`).join('')}<td class="n">${r.risk ? money(r.risk) : '-'}</td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+
+function viewFeed() {
+  if (!S.bets.length) return `<div class="empty">No bets yet. Be the first.</div>`;
+  return `<div class="feed">${S.bets.slice(0, 200).map(b => {
+    const mk = S.mk[b.market_id]; if (!mk) return '';
+    const on = name(b.side === 'a' ? mk.team_a : mk.team_b), opp = name(b.side === 'a' ? mk.team_b : mk.team_a);
+    const res = settled(b) ? ` <span class="${cls(b.payout - b.amount)}">${money(b.payout - b.amount, 1)}</span>` : '';
+    return `<div><span><b>${esc(name(b.manager_id))}</b> put ${money(+b.amount)} on <b>${esc(on)}</b> over ${esc(opp)} <span style="color:var(--mute)">· wk ${mk.week}</span>${res}</span><time>${ago(b.at)}</time></div>`;
+  }).join('')}</div>`;
+}
+
+function viewHow() {
+  return `<div class="how">
+  <h3>The idea</h3><p>Every head-to-head matchup in Fantasy Hockey Year 6 has two pots, one for each team. Put money in the pot of the team you think wins the week.</p>
+  <h3>How you win</h3><ul><li>When the week ends, the winning pot splits the losing pot, in proportion to what each person put in.</li><li>Example: $100 on Stefano, $300 on George. George wins: the George bettors get back their $300 plus the $100, split by stake. Stefano wins: the Stefano bettors get back their $100 plus the $300, so every $1 they bet pays $4.</li><li>You only win money a friend bet on the other side. There's no house. If nobody bets the other side, or it's a tie, everyone gets their money back.</li></ul>
+  <h3>Two kinds of odds</h3><ul><li><b>Pot odds</b> (the big % on each team) = that team's share of the money. They decide payouts and move with every bet. The less popular side pays more. Before anyone bets they show the model's number.</li><li><b>Live odds</b> = the Off-Night Projections model: the real Yahoo score so far plus a projection for the games still to play, with current rosters. They update every hour, so adds, drops, injuries, goalie starts and a big Tuesday all move them.</li><li>When the live odds and the pot odds disagree, that's your edge.</li></ul>
+  <h3>Rules</h3><ul><li>Everyone starts the season at <b>$0</b>. Standings show your season total and every week.</li><li>Bet on any matchup. In your own matchup you can only back yourself, never bet against yourself.</li><li>Nobody can be more than <b>$${FLOOR}</b> down. That counts the bets you have in play.</li><li>Bets are final once placed.</li><li>Matchups open about a week ahead.</li><li>Every day, betting pauses at the first NHL puck drop and reopens at 8 AM ET the next morning, once the scores are in. No betting on games in progress.</li><li>Betting locks for the week at the first puck drop on the last day of the matchup week.</li><li>Matchups settle the morning after the week ends, from the Yahoo scoreboard.</li><li>The site only keeps score. Anything real gets settled between you guys at the end.</li></ul>
+  <h3>Your link</h3><p>Your personal link logs you in. Don't share it, or someone else can bet as you.</p></div>`;
+}
+
+// ---- events ----
+document.addEventListener('click', async e => {
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.dataset.tab) { S.tab = t.dataset.tab; render(); return; }
+  if (t.dataset.week) { S.week = +t.dataset.week; render(); return; }
+  if (t.dataset.pick) { const [id, side] = t.dataset.pick.split('|'); const cur = S.sel[id]; S.sel[id] = cur && cur.side === side ? null : { side, amt: cur?.amt || '' }; render(); focusAmt(id); return; }
+  if (t.dataset.add) { const [id, v] = t.dataset.add.split('|'); S.sel[id].amt = String((+S.sel[id].amt || 0) + +v); render(); return; }
+  if (t.dataset.buy) {
+    const id = t.dataset.buy, sel = S.sel[id];
+    if (t.dataset.confirm !== '1') { t.dataset.confirm = '1'; t.textContent = `Tap again to confirm ${money(+sel.amt)}`; return; }
+    await bet(id, sel.side, +sel.amt); return;
+  }
+});
+document.addEventListener('input', e => {
+  const id = e.target.dataset.amt; if (!id) return;
+  S.sel[id].amt = e.target.value.replace(/[^0-9.]/g, '');
+  const pos = e.target.selectionStart; render(); focusAmt(id, pos);
+});
+function focusAmt(id, pos) { const el = document.querySelector(`input[data-amt="${id}"]`); if (el) { el.focus(); if (pos != null) el.setSelectionRange(pos, pos); } }
+async function bet(id, side, amount) {
+  if (S.busy) return; S.busy = true; render();
+  const { data, error } = await SB.rpc('place_bet', { tok: TOKEN, mkt: id, pick: side, amount });
+  S.busy = false;
+  if (error) { toast(error.message); render(); return; }
+  S.sel[id] = null; toast(`${money(+data.amount)} on ${name(side === 'a' ? S.mk[id].team_a : S.mk[id].team_b)}. Good luck.`);
+  await load(); render();
+}
+
+// ---- start ----
+(async function () {
+  if (!TOKEN) { $('#app').innerHTML = `<div class="gate"><div class="brand" style="justify-content:center"><div class="puck"></div>Puck Market</div><h1>Private league market</h1><p>Open this site with your personal link from the league commish.</p></div>`; return; }
+  const { data, error } = await SB.rpc('whoami', { tok: TOKEN });
+  if (error || !data) { try { localStorage.removeItem('pm_tok'); } catch (e) {} $('#app').innerHTML = `<div class="gate"><h1>That link didn't work</h1><p>Ask the commish for your personal link again.</p></div>`; return; }
+  S.me = data;
+  await load(); render();
+  SB.channel('pm').on('postgres_changes', { event: '*', schema: 'public' }, soon).subscribe();
+  setInterval(soon, 20000);   // backup in case the live connection drops (phone asleep, bad Wi-Fi)
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) soon(); });
+})();
+</script>
+</body>
+</html>
