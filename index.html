@@ -46,6 +46,8 @@ nav button.on{color:var(--text);border-color:var(--text)}
 .side .nm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .side .mg{font-size:12px;color:var(--mute)}
 .side .px{font-family:var(--mono);font-weight:700;font-size:20px}
+.side .px.none{font-size:13px;color:var(--mute);font-family:inherit;font-weight:600}
+.side .per{font-size:11px;color:var(--mute);white-space:nowrap}
 .side.A .px{color:var(--a)}.side.B .px{color:var(--b)}
 .side:hover:not(:disabled){border-color:var(--line)}
 .side.sel.A{border-color:var(--a);background:var(--a-soft)}
@@ -131,7 +133,7 @@ function until(t) { const s = (new Date(t) - Date.now()) / 1000; if (s <= 0) ret
 // pool odds: each side's share of the money. No money yet -> the model's number.
 function odds(mk) {
   const a = +mk.pot_a, b = +mk.pot_b;
-  return a + b > 0 ? { pa: a / (a + b), crowd: true } : { pa: +mk.model_p, crowd: false };
+  return a + b > 0 ? { pa: a / (a + b), crowd: true } : { pa: 0.5, crowd: false };
 }
 // what a $amt bet on side returns (stake included) if they win and the pots stay as they are after it
 function wouldPay(mk, side, amt, extra = 0) {
@@ -225,7 +227,7 @@ function card(mk) {
     <div class="card-top"><span>${mine ? 'Your matchup' : 'Week ' + mk.week}</span>${tag}</div>
     ${sideBtn(mk, 'a', A, o.pa, canA, sel && sel.side === 'a', done && mk.winner === 'a')}
     ${sideBtn(mk, 'b', B, 1 - o.pa, canB, sel && sel.side === 'b', done && mk.winner === 'b')}
-    <div class="bar"><i style="width:${(o.pa * 100).toFixed(1)}%"></i></div>
+    <div class="bar" style="${o.crowd ? '' : 'background:var(--line)'}"><i style="width:${(o.pa * 100).toFixed(1)}%;${o.crowd ? '' : 'background:var(--line)'}"></i></div>
     ${spark(mk)}
     <div class="meta"><span>${o.crowd ? `Pot <b>${money(pot)}</b>` : 'No bets yet'}</span>
       <span title="Off-Night model: score so far + projection for the games left, current rosters">Live odds <b>${pct(+mk.model_p)} / ${pct(1 - mk.model_p)}</b></span></div>
@@ -235,10 +237,13 @@ function card(mk) {
   </div>`;
 }
 function sideBtn(mk, side, M, p, can, on, won) {
-  const pot = side === 'a' ? +mk.pot_a : +mk.pot_b;
+  const pot = side === 'a' ? +mk.pot_a : +mk.pot_b, other = side === 'a' ? +mk.pot_b : +mk.pot_a;
+  // only real money makes odds: nothing bet = no number, one side empty = no payout yet
+  const right = pot + other === 0 ? `<div class="px none">No bets</div>`
+    : `<div class="px">${pct(pot / (pot + other))}</div><div class="per">${pot && other ? '$1 pays ' + money(1 + other / pot) : pot ? 'nobody against yet' : 'pays big, be first'}</div>`;
   return `<button class="side ${side === 'a' ? 'A' : 'B'} ${on ? 'sel' : ''} ${won ? 'won' : ''}" data-pick="${mk.id}|${side}" ${can ? '' : 'disabled'}>
     <div><div class="nm">${esc(M.team)}</div><div class="mg">${esc(M.name)}${won ? ' · won' : ''}${pot ? ' · ' + money(pot) + ' on them' : ''}</div></div>
-    <div class="px">${pct(p)}</div></button>`;
+    <div style="text-align:right">${right}</div></button>`;
 }
 function myRows(mk, my, done) {
   const out = [];
@@ -301,7 +306,7 @@ function viewHow() {
   return `<div class="how">
   <h3>The idea</h3><p>Every head-to-head matchup in Fantasy Hockey Year 6 has two pots, one for each team. Put money in the pot of the team you think wins the week.</p>
   <h3>How you win</h3><ul><li>When the week ends, the winning pot splits the losing pot, in proportion to what each person put in.</li><li>Example: $100 on Stefano, $300 on George. George wins: the George bettors get back their $300 plus the $100, split by stake. Stefano wins: the Stefano bettors get back their $100 plus the $300, so every $1 they bet pays $4.</li><li>You only win money a friend bet on the other side. There's no house. If nobody bets the other side, or it's a tie, everyone gets their money back.</li></ul>
-  <h3>Two kinds of odds</h3><ul><li><b>Pot odds</b> (the big % on each team) = that team's share of the money. They decide payouts and move with every bet. The less popular side pays more. Before anyone bets they show the model's number.</li><li><b>Live odds</b> = the Off-Night Projections model: the real Yahoo score so far plus a projection for the games still to play, with current rosters. They update every hour, so adds, drops, injuries, goalie starts and a big Tuesday all move them.</li><li>When the live odds and the pot odds disagree, that's your edge.</li></ul>
+  <h3>Two kinds of odds</h3><ul><li><b>Pot odds</b> (the big % on each team) = that team's share of the money. They decide payouts and move with every bet. The less popular side pays more. Until someone bets there's no number, because there's no money yet.</li><li><b>Live odds</b> = the Off-Night Projections model: the real Yahoo score so far plus a projection for the games still to play, with current rosters. They update every hour, so adds, drops, injuries, goalie starts and a big Tuesday all move them.</li><li>When the live odds and the pot odds disagree, that's your edge.</li></ul>
   <h3>Rules</h3><ul><li>Everyone starts the season at <b>$0</b>. Standings show your season total and every week.</li><li>Bet on any matchup. In your own matchup you can only back yourself, never bet against yourself.</li><li>Nobody can be more than <b>$${FLOOR}</b> down. That counts the bets you have in play.</li><li>Bets are final once placed.</li><li>Matchups open about a week ahead.</li><li>Every day, betting pauses at the first NHL puck drop and reopens at 8 AM ET the next morning, once the scores are in. No betting on games in progress.</li><li>Betting locks for the week at the first puck drop on the last day of the matchup week.</li><li>Matchups settle the morning after the week ends, from the Yahoo scoreboard.</li><li>The site only keeps score. Anything real gets settled between you guys at the end.</li></ul>
   <h3>Your link</h3><p>Your personal link logs you in. Don't share it, or someone else can bet as you.</p></div>`;
 }
