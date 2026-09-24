@@ -103,6 +103,7 @@ th.ov,td.ov{background:rgba(255,255,255,.045);font-size:16px}th.ov{color:var(--t
 <script>
 const SB = supabase.createClient('https://svesriuvprzeuuyocino.supabase.co', 'sb_publishable_PdBtK_rVll5rJvD2SGOFVQ_HR_UUEyq');
 const FLOOR = 500;   // nobody can be more than $500 down on the season
+const CAP = 5;       // nobody wins more than 5x their bet (the rest of the losing pot is refunded)
 
 // ---- login link: #t=<token>, remembered on this device ----
 let TOKEN = null;
@@ -138,7 +139,7 @@ function odds(mk) {
 // what a $amt bet on side returns (stake included) if they win and the pots stay as they are after it
 function wouldPay(mk, side, amt, extra = 0) {
   const mine = (side === 'a' ? +mk.pot_a : +mk.pot_b) + extra, other = side === 'a' ? +mk.pot_b : +mk.pot_a;
-  return mine > 0 ? amt + amt / mine * other : amt;
+  return mine > 0 ? amt + amt * Math.min(CAP, other / mine) : amt;
 }
 const settled = b => b.payout != null;
 function result(mid, week) {   // settled winnings - stakes; week null = season
@@ -240,7 +241,7 @@ function sideBtn(mk, side, M, p, can, on, won) {
   const pot = side === 'a' ? +mk.pot_a : +mk.pot_b, other = side === 'a' ? +mk.pot_b : +mk.pot_a;
   // only real money makes odds: nothing bet = no number, one side empty = no payout yet
   const right = pot + other === 0 ? `<div class="px none">No bets</div>`
-    : `<div class="px">${pct(pot / (pot + other))}</div><div class="per">${pot && other ? '$1 pays ' + money(1 + other / pot) : pot ? 'nobody against yet' : 'pays big, be first'}</div>`;
+    : `<div class="px">${pct(pot / (pot + other))}</div><div class="per">${pot && other ? '$1 pays ' + money(1 + Math.min(CAP, other / pot)) : pot ? 'nobody against yet' : 'be first, win up to 5x'}</div>`;
   return `<button class="side ${side === 'a' ? 'A' : 'B'} ${on ? 'sel' : ''} ${won ? 'won' : ''}" data-pick="${mk.id}|${side}" ${can ? '' : 'disabled'}>
     <div><div class="nm">${esc(M.team)}</div><div class="mg">${esc(M.name)}${won ? ' · won' : ''}${pot ? ' · ' + money(pot) + ' on them' : ''}</div></div>
     <div style="text-align:right">${right}</div></button>`;
@@ -305,7 +306,7 @@ function viewFeed() {
 function viewHow() {
   return `<div class="how">
   <h3>The idea</h3><p>Every head-to-head matchup in Fantasy Hockey Year 6 has two pots, one for each team. Put money in the pot of the team you think wins the week.</p>
-  <h3>How you win</h3><ul><li>When the week ends, the winning pot splits the losing pot, in proportion to what each person put in.</li><li>Example: $100 on Stefano, $300 on George. George wins: the George bettors get back their $300 plus the $100, split by stake. Stefano wins: the Stefano bettors get back their $100 plus the $300, so every $1 they bet pays $4.</li><li>You only win money a friend bet on the other side. There's no house. If nobody bets the other side, or it's a tie, everyone gets their money back.</li></ul>
+  <h3>How you win</h3><ul><li>When the week ends, the winning pot splits the losing pot, in proportion to what each person put in.</li><li><b>Max win is 5x your bet.</b> If the losing pot is bigger than that, the extra goes back to the people who bet it. So $1 sniped against $100 wins $5, not $100, and the $100 guy only loses $5.</li><li>Example: $100 on Stefano, $300 on George. George wins: the George bettors get back their $300 plus the $100, split by stake. Stefano wins: the Stefano bettors get back their $100 plus the $300, so every $1 they bet pays $4.</li><li>You only win money a friend bet on the other side. There's no house. If nobody bets the other side, or it's a tie, everyone gets their money back.</li></ul>
   <h3>Two kinds of odds</h3><ul><li><b>Pot odds</b> (the big % on each team) = that team's share of the money. They decide payouts and move with every bet. The less popular side pays more. Until someone bets there's no number, because there's no money yet.</li><li><b>Live odds</b> = the Off-Night Projections model: the real Yahoo score so far plus a projection for the games still to play, with current rosters. They update every hour, so adds, drops, injuries, goalie starts and a big Tuesday all move them.</li><li>When the live odds and the pot odds disagree, that's your edge.</li></ul>
   <h3>Rules</h3><ul><li>Everyone starts the season at <b>$0</b>. Standings show your season total and every week.</li><li>Bet on any matchup. In your own matchup you can only back yourself, never bet against yourself.</li><li>Nobody can be more than <b>$${FLOOR}</b> down. That counts the bets you have in play.</li><li>Bets are final once placed.</li><li>Matchups open about a week ahead.</li><li>Every day, betting pauses at the first NHL puck drop and reopens at 8 AM ET the next morning, once the scores are in. No betting on games in progress.</li><li>Betting locks for the week at the first puck drop on the last day of the matchup week.</li><li>Matchups settle the morning after the week ends, from the Yahoo scoreboard.</li><li>The site only keeps score. Anything real gets settled between you guys at the end.</li></ul>
   <h3>Your link</h3><p>Your personal link logs you in. Don't share it, or someone else can bet as you.</p></div>`;
