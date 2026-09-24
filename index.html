@@ -255,7 +255,7 @@ function guide() {
     <li><b>Add money:</b> e-Transfer ${c}. ${c} adds it to your balance here (top of the page).</li>
     <li><b>Pick a team</b> on any matchup below and type an amount. $${MIN} minimum, $${MAX} max per matchup.</li>
     <li><b>Read the odds.</b> <b>-200</b> = favourite: bet $10 to win $5. <b>+200</b> = underdog: bet $10 to win $20. <b>EVEN</b> = bet $10 to win $10. Your odds lock in when you bet.</li>
-    <li><b>Wait for a friend to take the other side.</b> There's no house, so a friend has to bet against you. Before you confirm, the site tells you how much matches right away. Anything nobody takes comes back to your balance at the next 8 AM reset, or cancel it yourself.</li>
+    <li><b>Wait for a friend to take the other side.</b> There's no house, so a friend has to bet against you. <b>You only win on the part of your bet that gets matched.</b> Before you confirm, the site tells you how much matches right away. Anything nobody takes comes back to your balance at the next 8 AM reset, or cancel it yourself.</li>
     <li><b>Get paid.</b> The morning after the week ends, winnings land in your balance. Cash out from the Wallet tab.</li>
   </ol><div class="row"><span class="sub" style="margin:0">More detail in "How it works".</span><button class="sm" data-guide="off">Got it, hide this</button></div></div>`;
 }
@@ -283,7 +283,7 @@ function card(mk) {
 function sideBtn(mk, side, M, can, on, won) {
   const o = sideOdds(mk, side);
   const right = o == null ? `<div class="px none">${mk.status === 'resolved' ? '' : 'Odds at 8 AM'}</div>`
-    : `<div class="px">${oddsTxt(o)}</div><div class="per">$10 wins ${money(10 * rate(o))}</div>`;
+    : `<div class="px">${oddsTxt(o)}</div><div class="per">$10 wins ${money(10 * rate(o))}</div><div class="per">${mk.status === 'open' && hasLine(mk) ? (fill(mk, side, 10).left < 0.005 ? '<span class="pos">ready to match</span>' : 'once someone takes it') : ''}</div>`;
   return `<button class="side ${side === 'a' ? 'A' : 'B'} ${on ? 'sel' : ''} ${won ? 'won' : ''}" data-pick="${mk.id}|${side}" ${can ? '' : 'disabled'}>
     <div style="min-width:0"><div class="nm">${esc(M.team)}</div><div class="mg">${esc(M.name)}${won ? ' · won' : ''}</div></div>
     <div>${right}</div></button>`;
@@ -293,8 +293,13 @@ function waitRows(mk) {
   for (const side of ['a', 'b']) {
     const w = waitSum(mk, side); if (w < 0.01) continue;
     const other = side === 'a' ? 'b' : 'a', who = name(side === 'a' ? mk.team_a : mk.team_b), opp = name(other === 'a' ? mk.team_a : mk.team_b);
-    const need = w * rate(sideOdds(mk, side));
-    out.push(`<div class="wait"><b>${money(w)}</b> on ${esc(who)} is waiting for a taker. Bet up to <b>${money(need)}</b> on ${esc(opp)} (${oddsTxt(sideOdds(mk, other))}) and it matches instantly.</div>`);
+    const oo = sideOdds(mk, other), need = w * rate(sideOdds(mk, side));
+    if (need >= MIN - 0.004) {
+      out.push(`<div class="wait"><b>${money(w)}</b> on ${esc(who)} is waiting for someone to bet against it. Bet between $${MIN} and <b>${money(Math.min(need, MAX))}</b> on ${esc(opp)} (${oddsTxt(oo)}) and all of your bet matches right away.</div>`);
+    } else {
+      const f = fill(mk, other, MIN);
+      out.push(`<div class="wait"><b>${money(w)}</b> on ${esc(who)} is waiting for someone to bet against it. A $${MIN} bet on ${esc(opp)} (${oddsTxt(oo)}) would match <b>${money(f.matched)}</b> of it right away (wins ${money(f.wins)} if ${esc(opp)} wins). The other ${money(f.left)} of your $${MIN} would wait for another taker.</div>`);
+    }
   }
   return out.join('');
 }
@@ -324,7 +329,7 @@ function ticket(mk, sel) {
       <span>Matches right now</span><b>${money(f.matched)}</b>
       ${f.matched > 0.004 ? `<span>If ${esc(who)} wins, that pays</span><b class="pos">${money(f.matched + f.wins)} (${money(f.wins, 1)})</b>` : ''}
       ${f.left > 0.004 ? `<span>Waits for a taker</span><b>${money(f.left)}</b>` : ''}
-    </div>${f.left > 0.004 ? `<div class="sub" style="margin:0">The waiting part wins ${money(f.left * rate(o))} if someone takes it. If nobody does by ${fmtT(mk.line_until)} ET, it comes back to your balance. You can cancel it any time.</div>` : ''}`;
+    </div>${f.left > 0.004 ? `<div class="sub" style="margin:0">${f.matched > 0.004 ? '' : '<b style="color:var(--text)">Nobody is on the other side yet, so none of this is matched.</b> '}You only win on money that gets matched. If someone takes the waiting ${money(f.left)}, it wins ${money(f.left * rate(o))} more. If nobody does by ${fmtT(mk.line_until)} ET, it comes back to your balance. You can cancel it any time.</div>` : ''}`;
   }
   if (amt > 0 && amt < MIN) err = `Minimum bet is $${MIN}.`;
   else if (amt > room + 1e-9) err = room < MIN ? `You're at the $${MAX} max on this matchup.` : `Max is $${MAX} per matchup. You can add ${money(room)} more here.`;
@@ -423,7 +428,7 @@ function viewHow() {
   <h3>The idea</h3><p>Real money, friends only, no house. Every head-to-head matchup in Fantasy Hockey Year 6 has odds. You bet on a team, and a friend has to take the other side. Nobody takes a cut, so every dollar someone wins is a dollar someone else lost.</p>
   <h3>Your money</h3><ul><li>To add money, e-Transfer ${c}. ${c} adds it to your balance on the site.</li><li>You can only bet what's in your balance.</li><li>To cash out, go to Wallet and ask for a cash-out. It comes off your balance and ${c} e-Transfers you.</li></ul>
   <h3>How the odds work</h3><ul><li>The odds come from the Off-Night Projections model (score so far + projection for the games left, current rosters). <b>-330</b> means bet $330 to win $100. <b>+330</b> means bet $100 to win $330. <b>EVEN</b> means bet $10 to win $10.</li><li>Example at -330 / +330: $10 on the favourite wins $3.03. To match it, someone puts $3.03 on the underdog and wins $10 if the underdog wins. Each side puts up what the other side would win.</li><li><b>Your odds lock in when you bet.</b> New odds post every morning at 8 AM ET and hold until the first puck drop (or the next morning).</li><li>"Model now" on each matchup is the live model. When it moves away from the locked odds, one side is a good deal.</li></ul>
-  <h3>Getting matched</h3><ul><li>When you bet, it matches right away against money waiting on the other side. Whatever isn't matched waits for a taker. The site shows you exactly how much matches before you confirm.</li><li>The card shows what's waiting, e.g. "$10 on Jaeden is waiting. Bet up to $2.44 on Daniel and it matches instantly."</li><li>You can cancel waiting money any time. If nobody takes it before the odds reset, it comes back to your balance automatically.</li><li>Matched money is locked in until the matchup settles.</li></ul>
+  <h3>Getting matched</h3><ul><li>When you bet, it matches right away against money waiting on the other side. Whatever isn't matched waits for a taker. The site shows you exactly how much matches before you confirm.</li><li>The card shows what's waiting, e.g. "$50 on Jaeden is waiting. Bet between $10 and $12.20 on Daniel and all of your bet matches right away."</li><li>You can cancel waiting money any time. If nobody takes it before the odds reset, it comes back to your balance automatically.</li><li>You only win on matched money. If none of your bet gets matched, you just get it all back: no win, no loss.</li><li>Matched money is locked in until the matchup settles.</li></ul>
   <h3>Rules</h3><ul><li>Minimum bet <b>$${MIN}</b>. Maximum <b>$${MAX}</b> per person per matchup.</li><li>In your own matchup you can only back yourself, never bet against yourself.</li><li>Every day, betting pauses at the first NHL puck drop and reopens at 8 AM ET with new odds.</li><li>Betting locks for the week at the first puck drop on the last day of the matchup week.</li><li>Matchups settle the morning after the week ends, from the Yahoo scoreboard. Winnings land in your balance. A tie refunds everyone.</li></ul>
   <h3>Your link</h3><p>Your personal link logs you in. Don't share it, or someone else can bet with your money. On iPhone you can tap Share, then Add to Home Screen, to keep it as an app.</p></div>`;
 }
