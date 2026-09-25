@@ -121,7 +121,6 @@ var SB = null;
 try { SB = supabase.createClient('https://svesriuvprzeuuyocino.supabase.co', 'sb_publishable_PdBtK_rVll5rJvD2SGOFVQ_HR_UUEyq'); } catch (e) {}
 const MIN = 10, MAX = 50;   // per bet minimum, per person per matchup maximum (and per person on the season pot)
 const FUT = '683-title-2026';   // the season-winner pot
-const PIN_ABOVE = [[3, 6], [7, 12], [5, 4]];   // Season winner order overrides (Stefano 09-25): Adriano > Zidane, Christopher > George, Thomas > Bao
 
 // ---- login link: ?t=<token> (or the old #t=), remembered on this device. The token stays in the
 // address bar on purpose, so a home-screen icon or bookmark keeps working in Safari.
@@ -365,16 +364,8 @@ function viewTitle() {
   const open = fOpen(), done = F.status === 'resolved', pot = fPot(), me = S.me.id, c = esc(commish()?.name || 'the commish');
   const mine = S.fbets.filter(b => b.manager_id === me), used = mine.reduce((s, b) => s + fStake(b), 0);
   const odds = F.odds || {}, info = F.info || {};
-  const teams = Object.values(S.managers).map(m => ({ m, p: +odds[m.id] || 0, i: info[m.id] || {}, on: fOn(m.id) }));
-  // order: 60% title-chance rank + 40% projected-record rank (they still have to make the playoffs), title breaks ties
-  [...teams].sort((a, b) => b.p - a.p).forEach((t, i) => (t.tr = i + 1));
-  teams.forEach((t) => (t.sc = 0.6 * t.tr + 0.4 * (t.i.rank || 99)));
-  teams.sort((a, b) => a.sc - b.sc || a.tr - b.tr);
-  // manual order calls from the commish: [above, below] by manager id
-  for (const [hi, lo] of PIN_ABOVE) {
-    const ih = teams.findIndex((t) => t.m.id === hi), il = teams.findIndex((t) => t.m.id === lo);
-    if (ih > il && il >= 0) teams.splice(il, 0, teams.splice(ih, 1)[0]);
-  }
+  const teams = Object.values(S.managers).map(m => ({ m, p: +odds[m.id] || 0, i: info[m.id] || {}, on: fOn(m.id) }))
+    .sort((a, b) => (a.i.order || 99) - (b.i.order || 99) || b.p - a.p);   // order is set by bookie.py
   const status = done ? `<b>Settled.</b> Champion: ${esc(S.managers[F.winner]?.team || '?')} (${esc(name(F.winner))}).`
     : open ? `<b>Betting is open until the season starts, ${fmtD(F.closes_at)} ET.</b> Then every bet is locked until the champion is crowned after the fantasy final.`
     : '<b>Betting is closed.</b> Every bet is locked until the champion is crowned after the fantasy final.';
@@ -420,7 +411,7 @@ function viewTitle() {
       <li><b>Winners split everything.</b> Everyone who backed the champion splits the whole pot by how much they put in. $${MIN} minimum, $${MAX} max per person in total. No cut.</li>
       <li><b>Bets close when the season starts</b> (${fmtD(F.closes_at)} ET). Until then you can cancel. After that, everything is locked until the fantasy final.</li>
       <li><b>If nobody backed the champion,</b> everyone gets their money back.</li>
-    </ol><div class="sub" style="margin:8px 0 0">Teams are ranked mostly on title chance but also on projected record, since they still have to make the playoffs (60% title chance, 40% record). Both come from the Off-Night projected standings: every team's real Yahoo roster played through the real schedule with daily best lineups, then 20,000 simulated seasons and playoffs. It's a guide. Payouts come only from the pot.</div></div>
+    </ol><div class="sub" style="margin:8px 0 0">Teams are ranked mostly on title chance but also on projected record, since they still have to make the playoffs (60% title chance, 40% record), with a few spots set by the commish. The title chances are the Off-Night model's numbers lined up with that order. They come from the Off-Night projected standings: every team's real Yahoo roster played through the real schedule with daily best lineups, then 20,000 simulated seasons and playoffs. It's a guide. Payouts come only from the pot.</div></div>
     ${myHtml}${tk}
     <div style="display:flex;flex-direction:column;gap:8px">${rows}</div>`;
 }
