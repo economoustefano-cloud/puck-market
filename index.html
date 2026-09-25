@@ -364,7 +364,11 @@ function viewTitle() {
   const open = fOpen(), done = F.status === 'resolved', pot = fPot(), me = S.me.id, c = esc(commish()?.name || 'the commish');
   const mine = S.fbets.filter(b => b.manager_id === me), used = mine.reduce((s, b) => s + fStake(b), 0);
   const odds = F.odds || {}, info = F.info || {};
-  const teams = Object.values(S.managers).map(m => ({ m, p: +odds[m.id] || 0, i: info[m.id] || {}, on: fOn(m.id) })).sort((a, b) => b.p - a.p || (a.i.rank || 99) - (b.i.rank || 99));   // title chance first, projected record breaks ties
+  const teams = Object.values(S.managers).map(m => ({ m, p: +odds[m.id] || 0, i: info[m.id] || {}, on: fOn(m.id) }));
+  // order: 60% title-chance rank + 40% projected-record rank (they still have to make the playoffs), title breaks ties
+  [...teams].sort((a, b) => b.p - a.p).forEach((t, i) => (t.tr = i + 1));
+  teams.forEach((t) => (t.sc = 0.6 * t.tr + 0.4 * (t.i.rank || 99)));
+  teams.sort((a, b) => a.sc - b.sc || a.tr - b.tr);
   const status = done ? `<b>Settled.</b> Champion: ${esc(S.managers[F.winner]?.team || '?')} (${esc(name(F.winner))}).`
     : open ? `<b>Betting is open until the season starts, ${fmtD(F.closes_at)} ET.</b> Then every bet is locked until the champion is crowned after the fantasy final.`
     : '<b>Betting is closed.</b> Every bet is locked until the champion is crowned after the fantasy final.';
@@ -410,7 +414,7 @@ function viewTitle() {
       <li><b>Winners split everything.</b> Everyone who backed the champion splits the whole pot by how much they put in. $${MIN} minimum, $${MAX} max per person in total. No cut.</li>
       <li><b>Bets close when the season starts</b> (${fmtD(F.closes_at)} ET). Until then you can cancel. After that, everything is locked until the fantasy final.</li>
       <li><b>If nobody backed the champion,</b> everyone gets their money back.</li>
-    </ol><div class="sub" style="margin:8px 0 0">Teams are listed by title chance (projected record breaks ties). Both come from the Off-Night projected standings: every team's real Yahoo roster played through the real schedule with daily best lineups, then 20,000 simulated seasons and playoffs. It's a guide. Payouts come only from the pot.</div></div>
+    </ol><div class="sub" style="margin:8px 0 0">Teams are ranked mostly on title chance but also on projected record, since they still have to make the playoffs (60% title chance, 40% record). Both come from the Off-Night projected standings: every team's real Yahoo roster played through the real schedule with daily best lineups, then 20,000 simulated seasons and playoffs. It's a guide. Payouts come only from the pot.</div></div>
     ${myHtml}${tk}
     <div style="display:flex;flex-direction:column;gap:8px">${rows}</div>`;
 }
