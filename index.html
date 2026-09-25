@@ -121,7 +121,7 @@ var SB = null;
 try { SB = supabase.createClient('https://svesriuvprzeuuyocino.supabase.co', 'sb_publishable_PdBtK_rVll5rJvD2SGOFVQ_HR_UUEyq'); } catch (e) {}
 const MIN = 10, MAX = 50;   // per bet minimum, per person per matchup maximum (and per person on the season pot)
 const FUT = '683-title-2026';   // the season-winner pot
-const PIN_ABOVE = [[3, 6]];      // Season winner order overrides (Stefano 09-25): Adriano above Zidane
+const PIN_ABOVE = [[3, 6], [7, 12], [5, 4]];   // Season winner order overrides (Stefano 09-25): Adriano > Zidane, Christopher > George, Thomas > Bao
 
 // ---- login link: ?t=<token> (or the old #t=), remembered on this device. The token stays in the
 // address bar on purpose, so a home-screen icon or bookmark keeps working in Safari.
