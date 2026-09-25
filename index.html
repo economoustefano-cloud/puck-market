@@ -411,7 +411,7 @@ function viewTitle() {
       <li><b>Winners split everything.</b> Everyone who backed the champion splits the whole pot by how much they put in. $${MIN} minimum, $${MAX} max per person in total. No cut.</li>
       <li><b>Bets close when the season starts</b> (${fmtD(F.closes_at)} ET). Until then you can cancel. After that, everything is locked until the fantasy final.</li>
       <li><b>If nobody backed the champion,</b> everyone gets their money back.</li>
-    </ol><div class="sub" style="margin:8px 0 0">Teams are listed like a sportsbook futures board, favourite first. Each line is the Off-Night model's title chance, shaded a little toward even because a lot can change over a season (injuries, trades). The model behind it is the Off-Night projected standings: every team's real Yahoo roster played through the real schedule with daily best lineups, then 20,000 simulated seasons and playoffs. It's a guide. Payouts come only from the pot.</div></div>
+    </ol><div class="sub" style="margin:8px 0 0">Teams are listed by projected record, and a team moves up when its title chance is better, unless the team above is way more likely to make the playoffs (15+ points). Each line is the Off-Night model's title chance, shaded a little toward even because a lot can change over a season (injuries, trades). The model behind it is the Off-Night projected standings: every team's real Yahoo roster played through the real schedule with daily best lineups, then 20,000 simulated seasons and playoffs. It's a guide. Payouts come only from the pot.</div></div>
     ${myHtml}${tk}
     <div style="display:flex;flex-direction:column;gap:8px">${rows}</div>`;
 }
