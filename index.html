@@ -121,6 +121,7 @@ var SB = null;
 try { SB = supabase.createClient('https://svesriuvprzeuuyocino.supabase.co', 'sb_publishable_PdBtK_rVll5rJvD2SGOFVQ_HR_UUEyq'); } catch (e) {}
 const MIN = 10, MAX = 50;   // per bet minimum, per person per matchup maximum (and per person on the season pot)
 const FUT = '683-title-2026';   // the season-winner pot
+const PIN_ABOVE = [[3, 6]];      // Season winner order overrides (Stefano 09-25): Adriano above Zidane
 
 // ---- login link: ?t=<token> (or the old #t=), remembered on this device. The token stays in the
 // address bar on purpose, so a home-screen icon or bookmark keeps working in Safari.
@@ -369,6 +370,11 @@ function viewTitle() {
   [...teams].sort((a, b) => b.p - a.p).forEach((t, i) => (t.tr = i + 1));
   teams.forEach((t) => (t.sc = 0.6 * t.tr + 0.4 * (t.i.rank || 99)));
   teams.sort((a, b) => a.sc - b.sc || a.tr - b.tr);
+  // manual order calls from the commish: [above, below] by manager id
+  for (const [hi, lo] of PIN_ABOVE) {
+    const ih = teams.findIndex((t) => t.m.id === hi), il = teams.findIndex((t) => t.m.id === lo);
+    if (ih > il && il >= 0) teams.splice(il, 0, teams.splice(ih, 1)[0]);
+  }
   const status = done ? `<b>Settled.</b> Champion: ${esc(S.managers[F.winner]?.team || '?')} (${esc(name(F.winner))}).`
     : open ? `<b>Betting is open until the season starts, ${fmtD(F.closes_at)} ET.</b> Then every bet is locked until the champion is crowned after the fantasy final.`
     : '<b>Betting is closed.</b> Every bet is locked until the champion is crowned after the fantasy final.';
