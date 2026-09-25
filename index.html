@@ -119,8 +119,7 @@ th.ov,td.ov{background:rgba(255,255,255,.045);font-size:16px}th.ov{color:var(--t
 <script>
 var SB = null;
 try { SB = supabase.createClient('https://svesriuvprzeuuyocino.supabase.co', 'sb_publishable_PdBtK_rVll5rJvD2SGOFVQ_HR_UUEyq'); } catch (e) {}
-const MIN = 10, MAX = 50;   // per bet minimum, per person per matchup maximum (and per person on the season pot)
-const FUT = '683-title-2026';   // the season-winner pot
+const MIN = 10, MAX = 50;   // per bet minimum, per person per matchup maximum
 
 // ---- login link: ?t=<token> (or the old #t=), remembered on this device. The token stays in the
 // address bar on purpose, so a home-screen icon or bookmark keeps working in Safari.
@@ -133,7 +132,7 @@ try {
 if (TOKEN && location.hash) { try { history.replaceState(null, '', location.pathname + '?t=' + TOKEN); } catch (e) {} }
 
 const S = { me: null, managers: {}, markets: [], mk: {}, bets: [], matches: [], gates: [], wallet: null, bank: null,
-  tab: 'markets', week: null, sel: {}, busy: false, bankKind: 'deposit', fut: null, fbets: [], fsel: null };
+  tab: 'markets', week: null, sel: {}, busy: false, bankKind: 'deposit' };
 
 // ---- helpers ----
 const $ = s => document.querySelector(s);
@@ -181,35 +180,23 @@ function result(mid, week) {
     if (week != null && S.mk[b.market_id]?.week !== week) continue;
     t += profitOf(b);
   }
-  if (week == null) for (const b of S.fbets) if (b.manager_id === mid) t += fProfit(b);
   return t;
 }
-const inPlay = (mid, week) => S.bets.filter(b => b.manager_id === mid && !settled(b) && (week == null || S.mk[b.market_id]?.week === week)).reduce((s, b) => s + +b.amount - +b.refunded, 0)
-  + (week == null ? S.fbets.filter(b => b.manager_id === mid && b.payout == null).reduce((s, b) => s + +b.amount - +b.refunded, 0) : 0);
-// season-winner pot: one pot, everyone on the champion splits it by stake
-const fStake = b => +b.amount - +b.refunded;
-const fLive = () => S.fbets.filter(b => fStake(b) > 0.004);
-const fPot = () => fLive().reduce((s, b) => s + fStake(b), 0);
-const fOn = t => fLive().filter(b => b.team === t).reduce((s, b) => s + fStake(b), 0);
-const fOpen = () => S.fut && S.fut.status === 'open' && new Date(S.fut.closes_at) > new Date();
-const fProfit = b => b.payout == null ? 0 : +b.payout - fStake(b);
-const fairOdds = p => { if (!(p > 0 && p < 1)) return null; const o = p >= 0.5 ? -100 * p / (1 - p) : 100 * (1 - p) / p; return Math.round(o / 5) * 5; };
+const inPlay = (mid, week) => S.bets.filter(b => b.manager_id === mid && !settled(b) && (week == null || S.mk[b.market_id]?.week === week)).reduce((s, b) => s + +b.amount - +b.refunded, 0);
 const usedOn = (mid, mkt) => S.bets.filter(b => b.manager_id === mid && b.market_id === mkt).reduce((s, b) => s + +b.amount - +b.refunded, 0);
 
 // ---- data ----
 async function load() {
-  const [m, mk, g, b, x, me, f, fb] = await Promise.all([
+  const [m, mk, g, b, x, me] = await Promise.all([
     SB.from('managers').select('*'), SB.from('markets').select('*'), SB.from('gates').select('*'),
     SB.from('bets').select('*').order('at', { ascending: false }).limit(5000),
-    SB.from('matches').select('*').limit(20000), SB.rpc('whoami', { tok: TOKEN }),
-    SB.from('futures').select('*').eq('id', FUT), SB.from('futures_bets').select('*').eq('future_id', FUT).order('at', { ascending: false }).limit(5000)]);
+    SB.from('matches').select('*').limit(20000), SB.rpc('whoami', { tok: TOKEN })]);
   if (m.error) throw m.error;
   S.managers = Object.fromEntries(m.data.map(r => [r.id, r]));
   S.markets = mk.data.sort((a, b) => a.week - b.week || a.id.localeCompare(b.id, undefined, { numeric: true }));
   S.mk = Object.fromEntries(S.markets.map(r => [r.id, r]));
   S.bets = b.data || []; S.matches = x.data || []; S.gates = g.data || [];
   if (me.data) S.me = me.data;
-  S.fut = (f.data || [])[0] || null; S.fbets = fb.data || [];
   if (S.tab === 'wallet') await loadWallet();
   if (S.tab === 'bank') await loadBank();
   if (S.week == null) {
@@ -225,7 +212,7 @@ function soon() { clearTimeout(reT); reT = setTimeout(async () => { try { await 
 // ---- render ----
 function render() {
   const me = S.me, sea = result(me.id, null), risk = inPlay(me.id, null);
-  const tabs = [['markets', 'Matchups'], ['title', 'Season winner'], ['wallet', 'Wallet'], ['board', 'Standings'], ['feed', 'Activity'], ['how', 'How it works']];
+  const tabs = [['markets', 'Matchups'], ['wallet', 'Wallet'], ['board', 'Standings'], ['feed', 'Activity'], ['how', 'How it works']];
   if (me.commish) tabs.splice(2, 0, ['bank', 'Bank']);
   $('#app').innerHTML = `
   <header>
@@ -238,7 +225,7 @@ function render() {
     </div>
   </header>
   <nav>${tabs.map(([k, l]) => `<button data-tab="${k}" class="${S.tab === k ? 'on' : ''}">${l}</button>`).join('')}</nav>
-  <main>${({ markets: viewMarkets, title: viewTitle, wallet: viewWallet, bank: viewBank, board: viewBoard, feed: viewFeed, how: viewHow })[S.tab]()}</main>`;
+  <main>${({ markets: viewMarkets, wallet: viewWallet, bank: viewBank, board: viewBoard, feed: viewFeed, how: viewHow })[S.tab]()}</main>`;
 }
 
 function weekBar() {
@@ -358,63 +345,6 @@ function ticket(mk, sel) {
   </div>`;
 }
 
-function viewTitle() {
-  const F = S.fut;
-  if (!F) return `<div class="empty">The season-winner pot isn't posted yet.</div>`;
-  const open = fOpen(), done = F.status === 'resolved', pot = fPot(), me = S.me.id, c = esc(commish()?.name || 'the commish');
-  const mine = S.fbets.filter(b => b.manager_id === me), used = mine.reduce((s, b) => s + fStake(b), 0);
-  const odds = F.odds || {}, info = F.info || {};
-  const teams = Object.values(S.managers).map(m => ({ m, p: +odds[m.id] || 0, i: info[m.id] || {}, on: fOn(m.id) })).sort((a, b) => b.p - a.p);
-  const status = done ? `<b>Settled.</b> Champion: ${esc(S.managers[F.winner]?.team || '?')} (${esc(name(F.winner))}).`
-    : open ? `<b>Betting is open until the season starts, ${fmtD(F.closes_at)} ET.</b> Then every bet is locked until the champion is crowned after the fantasy final.`
-    : '<b>Betting is closed.</b> Every bet is locked until the champion is crowned after the fantasy final.';
-  const sel = S.fsel;
-  const rows = teams.map((t, i) => {
-    const on = sel && sel.team === t.m.id, won = done && F.winner === t.m.id;
-    const pays10 = (pot + 10) * 10 / (t.on + 10);
-    const fo = fairOdds(t.p);
-    return `<button class="side A ${on ? 'sel' : ''} ${won ? 'won' : ''}" data-fpick="${t.m.id}" ${open ? '' : 'disabled'}>
-      <div style="min-width:0"><div class="nm">${i + 1}. ${esc(t.m.team)}</div><div class="mg">${esc(t.m.name)}${t.i.rk_starters ? ` · starters #${t.i.rk_starters} · full roster #${t.i.rk_full}` : ''}${won ? ' · champion' : ''}</div>
-        <div class="mg">${t.on ? `<b style="color:var(--text)">${money(t.on)}</b> on them` : 'Nobody on them yet'}</div></div>
-      <div><div class="px">${pct(t.p)}</div><div class="per">model chance${fo ? ' (' + oddsTxt(fo) + ')' : ''}</div>${open ? `<div class="per">${!pot ? 'pot is empty so far' : !t.on ? `$10 takes the whole ${money(pot + 10)}` : `$10 pays ${money(pays10)} now`}</div>` : ''}</div></button>`;
-  }).join('');
-  let tk = '';
-  if (sel && open) {
-    const t = S.managers[sel.team], amt = +sel.amt || 0, room = Math.max(0, MAX - used), bal = +S.me.balance;
-    let err = '';
-    if (amt > 0 && amt < MIN) err = `Minimum bet is $${MIN}.`;
-    else if (amt > room + 1e-9) err = room < MIN ? `You're at the $${MAX} max on the season winner.` : `Max is $${MAX} per person on the season winner. You can add ${money(room)} more.`;
-    else if (amt > bal + 1e-9) err = `Your balance is ${money(bal)}. e-Transfer ${c} to add more.`;
-    const onT = fOn(sel.team), share = amt > 0 ? (pot + amt) * amt / (onT + amt) : 0;
-    tk = `<div class="card" style="margin:12px 0"><div class="ticket" style="border:0;padding:0">
-      <div class="sub" style="margin:0">Bet on <b style="color:var(--text)">${esc(t.team)}</b> (${esc(t.name)}) to win the league.</div>
-      <div class="row"><div class="amt"><span>$</span><input inputmode="decimal" placeholder="${MIN}" value="${sel.amt || ''}" data-famt="1" data-keep="1"></div>
-        <div class="row quick">${[10, 25, 50].map(v => `<button data-fset="${v}">$${v}</button>`).join('')}</div></div>
-      ${amt > 0 ? `<div class="preview"><span>Pot after your bet</span><b>${money(pot + amt)}</b><span>On ${esc(name(sel.team))} after your bet</span><b>${money(onT + amt)}</b>
-        <span>If ${esc(name(sel.team))} wins and nothing else changes, you get</span><b class="pos">${money(share)} (${money(share - amt, 1)})</b></div>
-        <div class="sub" style="margin:0">That number moves as people bet: more money on other teams = a bigger payout, more money on ${esc(name(sel.team))} = a smaller one.</div>` : ''}
-      ${err ? `<div class="err">${err}</div>` : ''}
-      <button class="go" data-fbuy="1" ${amt >= MIN && !err && !S.busy ? '' : 'disabled'}>Bet ${amt > 0 ? money(amt) + ' on ' : 'on '}${esc(name(sel.team))}</button></div></div>`;
-  }
-  const myHtml = mine.length ? `<div class="box"><h3>Your season-winner bets</h3>${mine.map(b => {
-    const who = esc(S.managers[b.team]?.team || '?');
-    if (+b.refunded >= +b.amount) return `<div class="hold"><div>${money(+b.amount)} on ${who}</div><span style="color:var(--mute)">cancelled, back in your balance</span></div>`;
-    if (b.payout != null) return `<div class="hold"><div>${money(fStake(b))} on ${who}</div><b class="${cls(fProfit(b))}">${money(fProfit(b), 1)}</b></div>`;
-    const onT = fOn(b.team), now = onT ? pot * fStake(b) / onT : 0;
-    return `<div class="hold"><div>${money(fStake(b))} on ${who}<br><span style="color:var(--mute)">pays ${money(now)} right now if they win</span></div>${open ? `<button data-fcancel="${b.id}">Cancel</button>` : ''}</div>`;
-  }).join('')}</div>` : '';
-  return `<p class="sub">${status}</p>
-    <div class="tiles"><div class="tile"><small>Total pot</small><b>${money(pot)}</b></div><div class="tile"><small>Bets in the pot</small><b>${fLive().length}</b></div><div class="tile"><small>Your money in it</small><b>${money(used)}</b></div></div>
-    <div class="guide"><h3>How the season-winner pot works</h3><ol>
-      <li><b>One pot.</b> Pick the team you think wins the league. Everyone's money goes into the same pot.</li>
-      <li><b>Winners split everything.</b> Everyone who backed the champion splits the whole pot by how much they put in. $${MIN} minimum, $${MAX} max per person in total. No cut.</li>
-      <li><b>Bets close when the season starts</b> (${fmtD(F.closes_at)} ET). Until then you can cancel. After that, everything is locked until the fantasy final.</li>
-      <li><b>If nobody backed the champion,</b> everyone gets their money back.</li>
-    </ol><div class="sub" style="margin:8px 0 0">"Model chance" is the Off-Night model's title odds from team strength only: each team's best starting lineup and its full roster played out day by day (bench, IR returns, roster limits), not the schedule and not who they play. It's a guide. Payouts come only from the pot.</div></div>
-    ${myHtml}${tk}
-    <div style="display:flex;flex-direction:column;gap:8px">${rows}</div>`;
-}
-
 function viewWallet() {
   const w = S.wallet, bal = +S.me.balance, c = commish();
   if (!w) { loadWallet().then(render); return '<div class="empty">Loading…</div>'; }
@@ -483,13 +413,8 @@ function viewBoard() {
 }
 
 function viewFeed() {
-  if (!S.bets.length && !S.fbets.length) return `<div class="empty">No bets yet. Be the first.</div>`;
-  const all = [...S.bets, ...S.fbets.map(b => Object.assign({ fut: 1 }, b))].sort((a, b) => new Date(b.at) - new Date(a.at));
-  return `<div class="feed">${all.slice(0, 200).map(b => {
-    if (b.fut) {
-      const st = +b.refunded >= +b.amount ? ' <span style="color:var(--mute)">· cancelled</span>' : b.payout != null ? ` <span class="${cls(fProfit(b))}">${money(fProfit(b), 1)}</span>` : '';
-      return `<div><span><b>${esc(name(b.manager_id))}</b> put ${money(+b.amount)} on <b>${esc(name(b.team))}</b> to win the league <span style="color:var(--mute)">· season pot</span>${st}</span><time>${ago(b.at)}</time></div>`;
-    }
+  if (!S.bets.length) return `<div class="empty">No bets yet. Be the first.</div>`;
+  return `<div class="feed">${S.bets.slice(0, 200).map(b => {
     const mk = S.mk[b.market_id]; if (!mk) return '';
     const on = name(b.side === 'a' ? mk.team_a : mk.team_b), opp = name(b.side === 'a' ? mk.team_b : mk.team_a);
     const st = settled(b) ? (+b.matched ? ` <span class="${cls(profitOf(b))}">${money(profitOf(b), 1)}</span>` : ' <span style="color:var(--mute)">refunded</span>')
@@ -502,7 +427,6 @@ function viewHow() {
   const c = esc(commish()?.name || 'the commish');
   return `<div class="how">
   <h3>The idea</h3><p>Real money, friends only, no house. Every head-to-head matchup in Fantasy Hockey Year 6 has odds. You bet on a team, and a friend has to take the other side. Nobody takes a cut, so every dollar someone wins is a dollar someone else lost.</p>
-  <h3>Season-winner pot</h3><p>On the Season winner tab you can also bet on who wins the whole league. That one works differently: it's one pot, and everyone who backed the champion splits all of it by how much they put in. $${MIN} to $${MAX} per person, bets close when the season starts, and if nobody backed the champion everyone gets their money back.</p>
   <h3>Your money</h3><ul><li>To add money, e-Transfer ${c}. ${c} adds it to your balance on the site.</li><li>You can only bet what's in your balance.</li><li>To cash out, go to Wallet and ask for a cash-out. It comes off your balance and ${c} e-Transfers you.</li></ul>
   <h3>How the odds work</h3><ul><li>The odds come from the Off-Night Projections model (score so far + projection for the games left, current rosters). <b>-330</b> means bet $330 to win $100. <b>+330</b> means bet $100 to win $330. <b>EVEN</b> means bet $10 to win $10.</li><li>Example at -330 / +330: $10 on the favourite wins $3.03. To match it, someone puts $3.03 on the underdog and wins $10 if the underdog wins. Each side puts up what the other side would win.</li><li><b>Your odds lock in when you bet.</b> Until the week starts, new odds post every morning at 8 AM ET, so adds, drops and trades count.</li><li>"Model now" on each matchup is the live model. When it moves away from the locked odds, one side is a good deal.</li></ul>
   <h3>Example: $10 on each side</h3><p>Adriano is <b>-245</b>, David is <b>+245</b> (the model gives Adriano about a 71% chance). One friend bets $10 on Adriano, another bets $10 on David.</p><ul><li>$10 on Adriano at -245 wins $4.08. So only <b>$4.08</b> of the David bet is needed to match it. The other <b>$5.92</b> of the David bet waits for someone else.</li><li><b>If David wins:</b> the David bettor wins the Adriano bettor's $10 (risking $4.08). The unmatched $5.92 comes back.</li><li><b>If Adriano wins:</b> the Adriano bettor wins $4.08. The David bettor loses $4.08, and the unmatched $5.92 comes back.</li><li>So "$10 on David wins $24.50" only happens if people put a total of $24.50 on Adriano. You never win more than the other side put in.</li></ul>
@@ -527,16 +451,6 @@ document.addEventListener('click', async e => {
   const d = t.dataset;
   if (d.tab) { S.tab = d.tab; render(); if (d.tab === 'wallet') loadWallet().then(render); if (d.tab === 'bank') loadBank().then(render); return; }
   if (d.week) { S.week = +d.week; render(); return; }
-  if (d.fpick) { const tm = +d.fpick; S.fsel = S.fsel && S.fsel.team === tm ? null : { team: tm, amt: S.fsel?.amt || '' }; render(); if (S.fsel) { const el = document.querySelector('input[data-famt]'); if (el) { el.focus(); el.scrollIntoView({ block: 'center' }); } } return; }
-  if (d.fset) { S.fsel.amt = d.fset; render(); return; }
-  if (d.fbuy) {
-    const sel = S.fsel;
-    if (!confirmTap(t, `Tap again to bet ${money(+sel.amt)} on ${name(sel.team)}`)) return;
-    const r = await call('place_future', { fut: FUT, pick: sel.team, amount: +sel.amt }, x => `${money(+x.amount)} on ${name(sel.team)} is in the pot. Good luck.`);
-    if (r) { S.fsel = null; render(); }
-    return;
-  }
-  if (d.fcancel) { if (!confirmTap(t, 'Tap again to cancel')) return; await call('cancel_future', { bet: +d.fcancel }, x => `${money(+x.refunded)} is back in your balance`); return; }
   if (d.pick) { const [id, side] = d.pick.split('|'); const cur = S.sel[id]; S.sel[id] = cur && cur.side === side ? null : { side, amt: cur?.amt || '' }; render(); focusAmt(id); return; }
   if (d.set) { const [id, v] = d.set.split('|'); S.sel[id].amt = v; render(); return; }
   if (d.buy) {
@@ -568,12 +482,6 @@ document.addEventListener('click', async e => {
   }
 });
 document.addEventListener('input', e => {
-  if (e.target.dataset.famt) {
-    S.fsel.amt = e.target.value.replace(/[^0-9.]/g, '');
-    const pos = e.target.selectionStart; render();
-    const el = document.querySelector('input[data-famt]'); if (el) { el.focus(); try { el.setSelectionRange(pos, pos); } catch (x) {} }
-    return;
-  }
   const id = e.target.dataset.amt; if (!id) return;
   S.sel[id].amt = e.target.value.replace(/[^0-9.]/g, '');
   const pos = e.target.selectionStart; render(); focusAmt(id, pos);
